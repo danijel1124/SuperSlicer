@@ -30,14 +30,14 @@ the NVDA screen reader on Windows.
 
 Rejected: a help text only (does not remove the arrow-key trap or give the control a role).
 
-## Code pointers (branch `accessibility`, based on upstream `dev_27_64`)
+## Code pointers (branch `accessibility`, based on upstream tag `2.7.62.0-beta2`)
 
 - `src/slic3r/GUI/Widgets/ComboBox.cpp` — `ComboBox::keyDown`, `sendComboBoxEvent`.
 - `src/slic3r/GUI/Widgets/DropDown.cpp` — popup list and its key forwarding.
 - `src/slic3r/GUI/BitmapComboBox.{hpp,cpp}` — preset combo base; native base is commented out.
 - `src/slic3r/GUI/PresetComboBoxes.cpp` — list building (`update()`), label markers, `OnSelect`.
 - `src/slic3r/GUI/Preferences.cpp` — preference checkboxes (pattern: `use_legacy_3DConnexion`).
-- `src/libslic3r/Config/AppConfig.cpp` — preference defaults in `set_defaults`.
+- `src/libslic3r/AppConfig.cpp` — preference defaults in `set_defaults`.
 
 ## Build and test
 
@@ -48,8 +48,9 @@ Rejected: a help text only (does not remove the arrow-key trap or give the contr
 
 ## Upstream
 
-- Pull request against `supermerill/SuperSlicer` `dev_27_64` from a separate branch that
-  contains only the code changes (no `CLAUDE.md`, no `.claude/`).
+- Pull request against the current upstream development branch (`dev_27_6x`): port the code
+  changes onto it in a separate branch that contains only those changes (no `CLAUDE.md`, no
+  `.claude/`).
 - Issue on `supermerill/SuperSlicer` describing the problem: drafted in English, submitted only
   after the user approved the final text.
 
