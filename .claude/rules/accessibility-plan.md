@@ -22,17 +22,37 @@ the NVDA screen reader on Windows.
 
 ## Decisions
 
-1. Keyboard fix (all users): with the list closed, Up/Down skip separator items and never select
-   a wizard item; the wizard opens only when its item is explicitly committed from the open list.
-2. New preference "Use native combo boxes" (default off): preset selectors become native Windows
-   combo boxes (`wxBitmapComboBox`, already used for enum options in `Field.cpp`) so NVDA gets the
-   combo box role, value and list. Decision 1 applies in this mode as well.
+- Accessible view: app config key `accessible_view` (default off), check item View > Accessible
+  view; switching saves the key and rebuilds the GUI (`recreate_GUI`). The normal view stays
+  unchanged so its behaviour matches other slicers.
+- The accessible view uses only standard controls. The custom widgets switch themselves
+  (least invasive): `ComboBox::UseNativeControl` covers the widget with a native control that
+  mirrors items/selection/events and exposes an accessible name.
+- Combo boxes: read-only lists become `wxChoice`, editable ones `wxComboBox`; no
+  `wxBitmapComboBox` (owner-drawn). Icon meanings (e.g. incompatible, system preset) become a text
+  suffix like the existing "(modified)".
+- Separators and the wizard item stay in the lists. Arrow keys skip separators in the direction of
+  travel (on the settings tabs also disabled items); the wizard item behaves as today. Standard
+  combo box behaviour applies: closed list selects immediately (unsaved-changes dialog right
+  away), open list (Alt+Down) commits only with Enter.
+- Before switching the view, ask to save a modified project and modified presets (as on exit).
 
 Rejected: a help text only (does not remove the arrow-key trap or give the control a role).
 
+## Phases
+
+1. All combo boxes: native control enabled in the `ComboBox` constructor when `accessible_view`
+   is on (preset combos done as prototype), accessible names, icon meanings as text, save prompt
+   before switching.
+2. Check boxes, spin inputs, text inputs.
+3. Names for unlabeled native buttons (e.g. the cog button next to the printer combo).
+
 ## Code pointers (branch `accessibility`, based on upstream tag `2.7.62.0-beta2`)
 
-- `src/slic3r/GUI/Widgets/ComboBox.cpp` — `ComboBox::keyDown`, `sendComboBoxEvent`.
+- `src/slic3r/GUI/Widgets/ComboBox.cpp` — `UseNativeControl`, `ComboBox::keyDown`, `sendComboBoxEvent`.
+- `src/slic3r/GUI/Field.cpp` — option controls on the settings tabs (`Choice::BUILD`, tooltip with
+  "parameter name" in `get_tooltip_text`).
+- `src/slic3r/GUI/MainFrame.cpp` — View menu (`init_menubar_as_editor`).
 - `src/slic3r/GUI/Widgets/DropDown.cpp` — popup list and its key forwarding.
 - `src/slic3r/GUI/BitmapComboBox.{hpp,cpp}` — preset combo base; native base is commented out.
 - `src/slic3r/GUI/PresetComboBoxes.cpp` — list building (`update()`), label markers, `OnSelect`.
@@ -44,7 +64,11 @@ Rejected: a help text only (does not remove the arrow-key trap or give the contr
 - Builds run locally only (local Windows build machine, MSVC 2022), never in cloud CI. Build steps:
   `CLAUDE.md`.
 - Verify with NVDA and the UI Automation tree: role, name/value announcement, arrow keys in
-  closed and open state, Enter, first-letter keys, no wizard on arrow keys.
+  closed and open state, Enter, first-letter keys, separators skipped.
+- Prototype tested (sidebar printer list): combo box role and name, selection of printers and
+  physical printers, separators skipped closed / read open. Still to test: focus after a preset
+  change on a settings tab, physical printer dialog, unsaved-changes dialog (closed and open
+  list), wizard via arrow key, switching back, start with the key already set.
 
 ## Upstream
 
@@ -52,10 +76,10 @@ Rejected: a help text only (does not remove the arrow-key trap or give the contr
   changes onto it in a separate branch that contains only those changes (no `CLAUDE.md`, no
   `.claude/`).
 - Issue on `supermerill/SuperSlicer` describing the problem: drafted in English, submitted only
-  after the user approved the final text.
+  after the user approved the final text. Mention the alternative (replacing the custom widgets by
+  native control classes instead of switching inside the widgets).
 
 ## Open
 
-- How the preference switches the base control (two combo classes vs. one class wrapping either
-  control); decide after reading `BitmapComboBox` and `PresetComboBoxes` in detail.
-- Whether the preference applies immediately or after restart.
+- Accessible names on the settings tabs: option label as name plus the full tooltip (incl.
+  "parameter name: <key>") as description, or the parameter key as name.
