@@ -2,8 +2,31 @@
 #include "UIColors.hpp"
 
 #include <wx/dcgraph.h>
+#include <wx/choice.h>
+#if wxUSE_ACCESSIBILITY
+#include <wx/access.h>
+#endif
 
 #include "../GUI_App.hpp"
+
+#if wxUSE_ACCESSIBILITY
+// Supplies a fixed accessible name; role, value and items come from the native control.
+class NativeComboAccessible : public wxAccessible
+{
+    wxString m_name;
+
+public:
+    NativeComboAccessible(wxWindow *win, const wxString &name) : wxAccessible(win), m_name(name) {}
+
+    wxAccStatus GetName(int childId, wxString *name) override
+    {
+        if (childId != wxACC_SELF)
+            return wxACC_NOT_IMPLEMENTED;
+        *name = m_name;
+        return wxACC_OK;
+    }
+};
+#endif
 
 BEGIN_EVENT_TABLE(ComboBox, TextInput)
 
@@ -69,6 +92,30 @@ ComboBox::ComboBox(wxWindow *      parent,
     for (int i = 0; i < n; ++i) Append(choices[i]);
 }
 
+void ComboBox::UseNativeControl(const wxString &accessible_name)
+{
+    if (native)
+        return;
+    native = new wxChoice(this, wxID_ANY, wxDefaultPosition, GetClientSize());
+    for (const wxString &text : texts)
+        native->Append(text);
+    native->SetSelection(drop.GetSelection());
+#if wxUSE_ACCESSIBILITY
+    native->SetAccessible(new NativeComboAccessible(native, accessible_name));
+#endif
+    SetMinSize(wxSize(GetMinSize().x, std::max(GetMinSize().y, native->GetBestSize().y)));
+
+    native->Bind(wxEVT_CHOICE, [this](wxCommandEvent &e) {
+        drop.SetSelection(e.GetInt());
+        TextInput::SetLabel(drop.GetValue());
+        sendComboBoxEvent();
+    });
+    Bind(wxEVT_SIZE, [this](wxSizeEvent &e) {
+        native->SetSize(GetClientSize());
+        e.Skip();
+    });
+}
+
 int ComboBox::GetSelection() const
 {
     return drop.GetSelection();
@@ -80,6 +127,8 @@ void ComboBox::SetSelection(int n)
     SetLabel(drop.GetValue());
     if (drop.selection >= 0)
         SetIcon(icons[drop.selection]);
+    if (native)
+        native->SetSelection(drop.GetSelection());
 }
 
 void ComboBox::Rescale()
@@ -101,6 +150,8 @@ void ComboBox::SetValue(const wxString &value)
     SetLabel(value);
     if (drop.selection >= 0)
         SetIcon(icons[drop.selection]);
+    if (native)
+        native->SetSelection(drop.GetSelection());
 }
 
 void ComboBox::SetLabel(const wxString &value)
@@ -184,6 +235,8 @@ int ComboBox::Append(const wxString         &item,
     datas.push_back(clientData);
     types.push_back(wxClientData_None);
     drop.Invalidate();
+    if (native)
+        native->Append(item);
     return int(texts.size()) - 1;
 }
 
@@ -212,6 +265,8 @@ void ComboBox::DoClear()
     drop.Invalidate(true);
     if (GetTextCtrl()->IsShown() || text_off)
         GetTextCtrl()->Clear();
+    if (native)
+        native->Clear();
 }
 
 void ComboBox::DoDeleteOneItem(unsigned int pos)
@@ -224,6 +279,10 @@ void ComboBox::DoDeleteOneItem(unsigned int pos)
     const int selection = drop.GetSelection();
     drop.Invalidate(true);
     drop.SetSelection(selection);
+    if (native) {
+        native->Delete(pos);
+        native->SetSelection(drop.GetSelection());
+    }
 }
 
 unsigned int ComboBox::GetCount() const { return texts.size(); }
@@ -239,6 +298,8 @@ void ComboBox::SetString(unsigned int n, wxString const &value)
     texts[n]  = value;
     drop.Invalidate();
     if (int(n) == drop.GetSelection()) SetLabel(value);
+    if (native)
+        native->SetString(n, value);
 }
 
 wxBitmap ComboBox::GetItemBitmap(unsigned int n) 
@@ -262,11 +323,15 @@ int ComboBox::DoInsertItems(const wxArrayStringsAdapter &items,
         icons.insert(icons.begin() + pos, wxNullBitmap);
         datas.insert(datas.begin() + pos, clientData ? clientData[i] : NULL);
         types.insert(types.begin() + pos, type);
+        if (native)
+            native->Insert(items[i], pos);
         ++pos;
     }
     const int selection = drop.GetSelection();
     drop.Invalidate(true);
     drop.SetSelection(selection);
+    if (native)
+        native->SetSelection(drop.GetSelection());
     return int(pos) - 1;
 }
 

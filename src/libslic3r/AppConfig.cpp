@@ -387,6 +387,10 @@ void AppConfig::set_defaults()
     if (get("wifi_config_dialog_declined").empty())
         set("wifi_config_dialog_declined", "0");
 
+    // Use native controls instead of custom-drawn widgets (for screen readers); see View menu.
+    if (get("accessible_view").empty())
+        set("accessible_view", "0");
+
 #ifdef _WIN32
     if (get("use_legacy_3DConnexion").empty())
         set("use_legacy_3DConnexion", "0");

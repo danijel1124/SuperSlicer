@@ -148,6 +148,35 @@ void PresetComboBox::init()
     Bind(wxEVT_COMBOBOX_CLOSEUP, [this](wxCommandEvent &) { m_suppress_change = true; });
 
     Bind(wxEVT_COMBOBOX, &PresetComboBox::OnSelect, this);
+
+    if (wxGetApp().app_config->get_bool("accessible_view")) {
+        wxString name;
+        switch (m_type) {
+        case Preset::TYPE_PRINTER:      name = _L("Printer"); break;
+        case Preset::TYPE_FFF_FILAMENT: name = _L("Filament"); break;
+        case Preset::TYPE_SLA_MATERIAL: name = _L("Material"); break;
+        default:                        name = _L("Print settings"); break;
+        }
+        UseNativeControl(name);
+    }
+}
+
+int PresetComboBox::skip_separators(int selected_item, bool skip_disabled)
+{
+    auto is_skipped = [this, skip_disabled](int item) {
+        const Marker marker = reinterpret_cast<Marker>(this->GetClientData(item));
+        return marker == LABEL_ITEM_MARKER || marker == LABEL_ITEM_PHYSICAL_PRINTERS ||
+               (skip_disabled && marker == LABEL_ITEM_DISABLED);
+    };
+    if (!IsNativeControl() || selected_item < 0 || selected_item >= int(GetCount()) || !is_skipped(selected_item))
+        return selected_item;
+    const int step = selected_item < m_last_selected ? -1 : 1;
+    for (int item = selected_item + step; item >= 0 && item < int(GetCount()); item += step)
+        if (!is_skipped(item)) {
+            SetSelection(item);
+            return item;
+        }
+    return selected_item;
 }
 
 void PresetComboBox::OnSelect(wxCommandEvent& evt)
@@ -156,7 +185,11 @@ void PresetComboBox::OnSelect(wxCommandEvent& evt)
         // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
         // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
         // So, use GetSelection() from event parameter 
-        auto selected_item = evt.GetSelection();
+        auto selected_item = skip_separators(evt.GetSelection(), true);
+        if (selected_item != evt.GetSelection()) {
+            evt.SetInt(selected_item);
+            evt.SetString(GetString(selected_item));
+        }
 
         //protected as selected_item is often at a weird value
         if (selected_item < (int)this->GetCount() && selected_item >= 0) {
@@ -703,7 +736,11 @@ static void run_wizard(ConfigWizard::StartPage sp)
 
 void PlaterPresetComboBox::OnSelect(wxCommandEvent &evt)
 {
-    auto selected_item = evt.GetSelection();
+    auto selected_item = skip_separators(evt.GetSelection(), false);
+    if (selected_item != evt.GetSelection()) {
+        evt.SetInt(selected_item);
+        evt.SetString(GetString(selected_item));
+    }
 
     auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
     if (marker >= LABEL_ITEM_MARKER && marker < LABEL_ITEM_MAX) {
@@ -1144,8 +1181,12 @@ void TabPresetComboBox::OnSelect(wxCommandEvent &evt)
     // see https://github.com/prusa3d/PrusaSlicer/issues/3889
     // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
     // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
-    // So, use GetSelection() from event parameter 
-    auto selected_item = evt.GetSelection();
+    // So, use GetSelection() from event parameter
+    auto selected_item = skip_separators(evt.GetSelection(), true);
+    if (selected_item != evt.GetSelection()) {
+        evt.SetInt(selected_item);
+        evt.SetString(GetString(selected_item));
+    }
 
     auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
     if (marker >= LABEL_ITEM_DISABLED && marker < LABEL_ITEM_MAX) {

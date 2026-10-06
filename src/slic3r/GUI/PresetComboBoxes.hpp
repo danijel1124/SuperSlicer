@@ -122,6 +122,11 @@ protected:
     void validate_selection(bool predicate = false);
     void update_selection();
 
+    // With the native control (accessible view): if selected_item is a separator (or, with
+    // skip_disabled, a disabled item), selects the next selectable item in the direction of travel
+    // from m_last_selected and returns it. Otherwise, and at the end of the list, returns selected_item.
+    int  skip_separators(int selected_item, bool skip_disabled);
+
 #ifdef __linux__
     static const char* separator_head() { return "------- "; }
     static const char* separator_tail() { return " -------"; }

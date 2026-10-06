@@ -2038,6 +2038,14 @@ void MainFrame::init_menubar_as_editor()
         append_menu_check_item(viewMenu, wxID_ANY, _L("&Collapse Sidebar") + "\t" + "Shift+" + sep_space + "Tab", _L("Collapse sidebar"),
             [this](wxCommandEvent&) { m_plater->collapse_sidebar(!m_plater->is_sidebar_collapsed()); }, this,
             [this]() { return can_change_view(); }, [this]() { return m_plater->is_sidebar_collapsed(); }, this);
+        append_menu_check_item(viewMenu, wxID_ANY, _L("&Accessible view"), _L("Use standard controls that work with screen readers"),
+            [](wxCommandEvent&) {
+                AppConfig* app_config = wxGetApp().app_config.get();
+                app_config->set("accessible_view", app_config->get_bool("accessible_view") ? "0" : "1");
+                app_config->save();
+                wxTheApp->CallAfter([]() { wxGetApp().recreate_GUI(_L("Switching accessible view") + dots); });
+            }, this,
+            []() { return true; }, []() { return wxGetApp().app_config->get_bool("accessible_view"); }, this);
 #ifndef __APPLE__
         // OSX adds its own menu item to toggle fullscreen.
         append_menu_check_item(viewMenu, wxID_ANY, _L("&Fullscreen") + "\t" + "F11", _L("Fullscreen"),

@@ -7,6 +7,8 @@
 #define CB_NO_DROP_ICON DD_NO_DROP_ICON
 #define CB_NO_TEXT DD_NO_TEXT
 
+class wxChoice;
+
 class ComboBox : public wxWindowWithItems<TextInput, wxItemContainer>
 {
     std::vector<wxString>         texts;
@@ -17,6 +19,9 @@ class ComboBox : public wxWindowWithItems<TextInput, wxItemContainer>
     DropDown               drop;
     bool     drop_down = false;
     bool     text_off = false;
+
+    // Native control covering this window when UseNativeControl() was called; nullptr otherwise.
+    wxChoice *native = nullptr;
 
 public:
     ComboBox(wxWindow *      parent,
@@ -29,6 +34,12 @@ public:
              long            style     = 0);
 
     DropDown & GetDropDown() { return drop; }
+
+    // Covers this read-only combo box with a native wxChoice (for screen readers). The native
+    // control mirrors items and selection, takes the keyboard focus and reports selection changes
+    // as wxEVT_COMBOBOX of this window. accessible_name is the name exposed to assistive technology.
+    void UseNativeControl(const wxString &accessible_name);
+    bool IsNativeControl() const { return native != nullptr; }
 
     bool SetFont(wxFont const & font) override;
 
