@@ -36,6 +36,8 @@ the NVDA screen reader on Windows.
   combo box behaviour applies: closed list selects immediately (unsaved-changes dialog right
   away), open list (Alt+Down) commits only with Enter.
 - Before switching the view, ask to save a modified project and modified presets (as on exit).
+- Accessible names: the visible label where one exists; otherwise the parameter key (the
+  "parameter name" at the end of the tooltip, `Field::get_tooltip_text`).
 
 Rejected: a help text only (does not remove the arrow-key trap or give the control a role).
 
@@ -66,9 +68,9 @@ Rejected: a help text only (does not remove the arrow-key trap or give the contr
 - Verify with NVDA and the UI Automation tree: role, name/value announcement, arrow keys in
   closed and open state, Enter, first-letter keys, separators skipped.
 - Prototype tested (sidebar printer list): combo box role and name, selection of printers and
-  physical printers, separators skipped closed / read open. Still to test: focus after a preset
-  change on a settings tab, physical printer dialog, unsaved-changes dialog (closed and open
-  list), wizard via arrow key, switching back, start with the key already set.
+  physical printers, separators skipped closed / read open, wizard via arrow key. Still to test:
+  focus after a preset change on a settings tab, physical printer dialog, unsaved-changes dialog
+  (closed and open list), switching back, start with the key already set.
 
 ## Upstream
 
@@ -81,5 +83,4 @@ Rejected: a help text only (does not remove the arrow-key trap or give the contr
 
 ## Open
 
-- Accessible names on the settings tabs: option label as name plus the full tooltip (incl.
-  "parameter name: <key>") as description, or the parameter key as name.
+- Whether the full tooltip is also exposed as accessible description.

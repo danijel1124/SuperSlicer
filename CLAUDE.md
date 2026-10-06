@@ -34,7 +34,8 @@ still use: set `CMAKE_POLICY_VERSION_MINIMUM=3.5` in the environment for both bu
 The Visual Studio generator finds the toolchain itself; no Native Tools prompt is needed.
 
 Dependencies (once; Release only; output in `deps\build\destdir\usr\local`, downloads in
-`deps\build\downloads`; everything else in `deps\build` is disposable after the build):
+`deps\build\downloads`; keep the intermediate files in `deps\build`, a rebuild without them
+starts from scratch):
 
 ```
 cd deps && mkdir build && cd build
@@ -99,6 +100,10 @@ Test sources are in `tests/` (`fff_print`, `libslic3r`, `sla_print`, `superslice
 - `src/slic3r/GUI/Widgets/` — custom-drawn widgets (`ComboBox`, `DropDown`, `TextInput`, ...).
   These are not native controls: in UI Automation they appear as an unnamed-role "Pane", and
   their keyboard handling is implemented manually (e.g. `ComboBox::keyDown`).
+- Accessible view (`accessibility` branch): app config key `accessible_view`, toggled by
+  View > Accessible view (`MainFrame.cpp`, rebuilds the GUI). `ComboBox::UseNativeControl`
+  covers a custom combo box with a native `wxChoice` that mirrors items, selection and events and
+  exposes an accessible name; `PresetComboBox` enables it and skips separators on arrow keys.
 - `src/slic3r/GUI/BitmapComboBox.*` — preset combo base class, derived from `::ComboBox`
   (custom widget); the former native `wxBitmapComboBox` base is still present as commented code.
 - `src/slic3r/Utils/` — print host uploads (`PrintHost.cpp` factory, `Moonraker`, `OctoPrint`,
